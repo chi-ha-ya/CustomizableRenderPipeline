@@ -1,17 +1,17 @@
 {
-  "name": "com.seed.render-pipelines",
+  "name": "com.custom.render-pipelines.customizable",
   "description": "CRP (Customizable Rendering Pipeline) is a highly customizable rendering pipeline based on Unity SRP, focused on mobile games, mainly.",
   "version": "1.0.1",
   "unity": "2019.4",
   "unityRelease": "3f1",
   "displayName": "Customizable RP",
   "author": {
-    "name": "千羽",
+    "name": "\u5343\u7fbd",
     "email": "2426670028@qq.com"
   },
   "contributors": [
     {
-      "name": "千羽",
+      "name": "\u5343\u7fbd",
       "email": "2426670028@qq.com"
     }
   ],
