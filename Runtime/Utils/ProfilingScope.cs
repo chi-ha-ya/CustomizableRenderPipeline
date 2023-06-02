@@ -69,6 +69,23 @@ namespace CustomizablePipeline
 #endif
         }
 
+        internal static Dictionary<string, ProfilingSampler> samplers = new Dictionary<string, ProfilingSampler>();
+        /// <summary>
+        ///  Get the sampler for the corresponding string name.
+        /// </summary>
+        /// <param name="Name"></param>
+        /// <returns></returns>
+        public static ProfilingSampler Get(string Name)
+        {
+            samplers.TryGetValue(Name, out var sampler);
+            if (sampler == null)
+            {
+                sampler = new ProfilingSampler(Name);
+                samplers.Add(Name, sampler);
+            }
+            return sampler;
+        }
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -102,14 +119,15 @@ namespace CustomizablePipeline
         public void Begin(CommandBuffer cmd)
         {
             if (cmd != null)
+            {
 #if UNITY_USE_RECORDER
-                if (sampler != null && sampler.isValid)
-                    cmd.BeginSample(sampler);
-                else
-                    cmd.BeginSample(name);
+                if (sampler != null && sampler.isValid) cmd.BeginSample(sampler);
+                else cmd.BeginSample(name);
 #else
-            cmd.BeginSample (name);
+                cmd.BeginSample (name);
 #endif
+                RenderStatus.Commit(cmd);
+            }
             inlineSampler?.Begin();
         }
 
@@ -120,14 +138,15 @@ namespace CustomizablePipeline
         public void End(CommandBuffer cmd)
         {
             if (cmd != null)
+            {
 #if UNITY_USE_RECORDER
-                if (sampler != null && sampler.isValid)
-                    cmd.EndSample(sampler);
-                else
-                    cmd.EndSample(name);
+                if (sampler != null && sampler.isValid) cmd.EndSample(sampler);
+                else cmd.EndSample(name);
 #else
-            m_Cmd.EndSample (name);
+                cmd.EndSample (name);
 #endif
+                RenderStatus.Commit(cmd);
+            }
             inlineSampler?.End();
         }
 
@@ -243,6 +262,13 @@ namespace CustomizablePipeline
             m_Sampler = sampler;
             m_Sampler?.Begin(m_Cmd);
         }
+        public ProfilingScope(CommandBuffer cmd, string Name)
+        {
+            m_Cmd = cmd;
+            m_Disposed = false;
+            m_Sampler = ProfilingSampler.Get(Name);
+            m_Sampler?.Begin(m_Cmd);
+        }
 
         /// <summary>
         ///  Dispose pattern implementation
@@ -272,6 +298,7 @@ namespace CustomizablePipeline
 #else
     public struct ProfilingScope : IDisposable {
         public ProfilingScope (CommandBuffer cmd, ProfilingSampler sampler) { }
+        public ProfilingScope (CommandBuffer cmd, string Name) { }
         public void Dispose () { }
     }
 #endif

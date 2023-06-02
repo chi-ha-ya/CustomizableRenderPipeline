@@ -15,6 +15,8 @@ namespace CustomizablePipeline
         public int DefaultRendererIndex = 0;
         public List<CustomizedRender> Renderers;
         public CustomizedRender DefaultRenderer => Renderers[DefaultRendererIndex];
+        public LightRenderingMode AdditionalLightsRenderingMode = LightRenderingMode.PerPixel;
+        public int AdditionalLightsPerObjectLimit = 4;
 
         protected override RenderPipeline CreatePipeline()
         {
@@ -29,6 +31,11 @@ namespace CustomizablePipeline
             }
 
             return null;
+        }
+        public CustomizedRender GetRenderer(int index)
+        {
+            if (index >= 0 && index < Renderers.Count) return Renderers[index];
+            else return DefaultRenderer;
         }
     }
 }

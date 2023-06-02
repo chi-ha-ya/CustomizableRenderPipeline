@@ -10,7 +10,6 @@ namespace CustomizablePipeline
     {
         public bool Initialized { get; private set; }
         public List<CustomizedProcess> Processes = new List<CustomizedProcess>();
-        internal CommandBuffer cmd;
         private void OnEnable()
         {
             OnCreate();
@@ -18,31 +17,62 @@ namespace CustomizablePipeline
         internal void OnCreate()
         {
             foreach (var process in Processes) process.OnCreate(this);
-            // cmd = CommandBufferPool.Get(string.Empty);
         }
-        internal void OnBeginFrameRendering(ref ScriptableRenderContext context, CommandBuffer cmd)
+        internal void OnBeginFrameRendering()
         {
+            var cmd = CommandBufferPool.Get(string.Empty);
+
             foreach (var process in Processes) if (process.Enable) process.OnFrameBegin(cmd);
-        }
-        internal void OnBeginCameraRendering(ref ScriptableRenderContext context, ref CameraData cameraData, CommandBuffer cmd)
-        {
-            foreach (var process in Processes) if (process.Enable) process.OnCameraSetup(cmd, ref cameraData);
-        }
-        internal void RenderingSingleCamera(ref ScriptableRenderContext context, ref RendererStatus status)
-        {
+            RenderStatus.Commit(cmd);
 
+            CommandBufferPool.Release(cmd);
         }
-        internal void OnEndCameraRendering(ref ScriptableRenderContext context, ref CameraData cameraData)
+        internal void OnBeginCameraRendering()
         {
-            foreach (var process in Processes) if (process.Enable) process.OnCameraCleanup(cmd, ref cameraData);
+            var cmd = CommandBufferPool.Get(string.Empty);
+
+            foreach (var process in Processes) if (process.Enable) process.OnCameraSetup(cmd);
+            RenderStatus.Commit(cmd);
+
+            CommandBufferPool.Release(cmd);
         }
-        internal void OnEndFrameRendering(ref ScriptableRenderContext context, CommandBuffer cmd)
+        internal void RenderingSingleCamera()
         {
+            foreach (var process in Processes)
+            {
+                if (process.Enable)
+                {
+                    var cmd = CommandBufferPool.Get(string.Empty);
+                    using (new ProfilingScope(cmd, process.Name))
+                    {
+                        process.Execute(cmd);
+                    }
+                    CommandBufferPool.Release(cmd);
+                }
+            }
+        }
+        internal void OnEndCameraRendering()
+        {
+            var cmd = CommandBufferPool.Get(string.Empty);
+
+            foreach (var process in Processes) if (process.Enable) process.OnCameraCleanup(cmd);
+            RenderStatus.Commit(cmd);
+
+            CommandBufferPool.Release(cmd);
+        }
+        internal void OnEndFrameRendering()
+        {
+            var cmd = CommandBufferPool.Get(string.Empty);
+
             foreach (var process in Processes) if (process.Enable) process.OnFrameCleanup(cmd);
-        }
-        public void OnDispose()
-        {
+            RenderStatus.Commit(cmd);
 
+            CommandBufferPool.Release(cmd);
+        }
+        internal void Dispose(bool disposing) { }
+        void OnDisable()
+        {
+            Dispose(true);
         }
     }
 }
