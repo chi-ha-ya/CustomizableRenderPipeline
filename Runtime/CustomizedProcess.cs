@@ -11,17 +11,38 @@ namespace CustomizablePipeline
         public bool Enable = true;
         public string Name;
         [field: SerializeField] public long Identifier { get; internal set; }
-        public virtual void OnCreate(CustomizedRender renderer) { }
+        /// <summary>
+        /// once before all Execute(), whether enabled or not
+        /// </summary>
+        /// <param name="renderer"></param>
+        public virtual void Init(CustomizedRender renderer) { }
+        /// <summary>
+        /// once pre frame, before rendering
+        /// </summary>
+        /// <param name="cmd"></param>
         public virtual void OnFrameBegin(CommandBuffer cmd) { }
+        /// <summary>
+        /// once per camera, if enabled & used by camera
+        /// </summary>
+        /// <param name="cmd"></param>
         public virtual void OnCameraSetup(CommandBuffer cmd) { }
+        /// <summary>
+        /// once per camera, if enabled & used by camera
+        /// </summary>
+        /// <param name="cmd"></param>
         public abstract void Execute(CommandBuffer cmd);
+        /// <summary>
+        ///  once per camera, if enabled & used by camera
+        /// </summary>
+        /// <param name="cmd"></param>
         public virtual void OnCameraCleanup(CommandBuffer cmd) { }
+        /// <summary>
+        /// once pre frame, after rendering
+        /// </summary>
+        /// <param name="cmd"></param>
         public virtual void OnFrameCleanup(CommandBuffer cmd) { }
         public virtual void Dispose(bool disposing) { }
-        void OnDisable()
-        {
-            Dispose(true);
-        }
+        void OnDisable() { Dispose(true); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void SetRenderTarget(CommandBuffer cmd)

@@ -16,44 +16,38 @@ namespace CustomizablePipeline
         }
         protected override void Render(ScriptableRenderContext context, Camera[] cameras)
         {
-            if (cameras == null || cameras.Length <= 0) return;
-            Array.Sort(cameras, (camera1, camera2) => { return (int)camera1.depth - (int)camera2.depth; });
-            RenderStatus.context = context;
-            RenderStatus.cameras = cameras;
-            RenderStatus.pipeline = this;
-
-            using (new ProfilingScope(null, KeywordStrings.CustomizedRP))
+            BeginFrameRendering(context, cameras);
+            if (cameras != null || cameras.Length > 0)
             {
-                BeginFrameRendering(context, cameras);
+                using (new ProfilingScope(null, KeywordStrings.CustomizedRP))
+                {
+                    m_RenderData.Init(context, cameras, this);
+                    foreach (var renderer in m_RenderData.ActiveRenders) renderer.Init();
 
-                m_RenderData.Init(asset, cameras);
+                    foreach (var renderer in m_RenderData.ActiveRenders) renderer.OnBeginFrameRendering();
 
-                foreach (var renderer in m_RenderData.ActiveRenders) renderer.OnBeginFrameRendering();
+                    for (int i = 0; i < m_RenderData.Length; ++i) RenderingSingleCamera(m_RenderData[i]);
 
-                for (int i = 0; i < m_RenderData.Length; ++i) RenderingSingleCamera(m_RenderData[i]);
-
-                foreach (var renderer in m_RenderData.ActiveRenders) renderer.OnEndFrameRendering();
-
-                EndFrameRendering(context, cameras);
+                    foreach (var renderer in m_RenderData.ActiveRenders) renderer.OnEndFrameRendering();
+                }
+                context.Submit();
             }
-            context.Submit();
+            EndFrameRendering(context, cameras);
         }
 
         void RenderingSingleCamera(CameraData data)
         {
-            RenderStatus.cameraData = data;
             var camera = data.camera;
             var renderer = data.renderer;
             BeginCameraRendering(RenderStatus.context, camera);
 
             using (new ProfilingScope(null, ProfilingSampler.Get(camera.name)))
             {
+                RenderStatus.SetupCameraProperties(data);
+                Culling(camera, out RenderStatus.cullingResults);
+
                 renderer.OnBeginCameraRendering();
-
-                SetupCameraProperties(camera);
-                Culling(camera);
-                renderer.RenderingSingleCamera();
-
+                renderer.Execute();
 #if UNITY_EDITOR
                 if (UnityEditor.Handles.ShouldRenderGizmos())
                 {
@@ -67,29 +61,13 @@ namespace CustomizablePipeline
             }
             EndCameraRendering(RenderStatus.context, camera);
         }
-        protected virtual void SetupCameraProperties(Camera camera)
+        protected virtual void Culling(Camera camera, out CullingResults results)
         {
-#if UNITY_EDITOR
-            if (camera.cameraType == CameraType.SceneView)
-            {
-                ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
-            }
-            else if (camera.cameraType == CameraType.Preview)
-            {
-                camera.clearFlags = CameraClearFlags.Color;
-                camera.backgroundColor = new Color32(0, 0, 0, 255);
-            }
-#endif
-            // Target.SetupCameraProperties(ref data, Asset.RenderScale);
-            RenderStatus.context.SetupCameraProperties(camera);//某些设置仍深埋在c++...
-        }
-        protected virtual void Culling(Camera camera)
-        {
-            camera.TryGetCullingParameters(false, out var cullingParameters); //todo: 支持AR/XR
-            cullingParameters.isOrthographic = camera.orthographic;
-            cullingParameters.maximumVisibleLights = LightConstants.MaxVisibleLights;
-            cullingParameters.shadowDistance = Mathf.Clamp(LightConstants.shadowDistance, 0f, camera.farClipPlane);
-            RenderStatus.cullingResults = RenderStatus.context.Cull(ref cullingParameters);
+            camera.TryGetCullingParameters(false, out var parameters); //todo: 支持AR/XR
+            parameters.isOrthographic = camera.orthographic;
+            parameters.maximumVisibleLights = LightConstants.MaxVisibleLights;
+            parameters.shadowDistance = Mathf.Clamp(LightConstants.shadowDistance, 0f, camera.farClipPlane);
+            results = RenderStatus.context.Cull(ref parameters);
         }
         struct RenderData
         {
@@ -98,9 +76,12 @@ namespace CustomizablePipeline
             public HashSet<CustomizedRender> ActiveRenders;
             public CameraData this[int index] => m_CameraDatas[index];
 
-            public void Init(CustomizedRenderPipelineAsset asset, Camera[] cameras)
+            public void Init(ScriptableRenderContext context, Camera[] cameras, CustomizedRenderPipeline pipeline)
             {
                 Length = cameras.Length;
+
+                Array.Sort(cameras, (camera1, camera2) => { return (int)camera1.depth - (int)camera2.depth; });
+                RenderStatus.Init(context, pipeline);
 
                 if (ActiveRenders == null) ActiveRenders = new HashSet<CustomizedRender>();
                 else ActiveRenders.Clear();
@@ -108,18 +89,21 @@ namespace CustomizablePipeline
                 if (m_CameraDatas == null || m_CameraDatas.Length < cameras.Length) m_CameraDatas = new CameraData[Length];//与cameras一一对应
                 for (int i = 0; i < Length; ++i)
                 {
-                    TryGetCameraData(asset, cameras[i], out m_CameraDatas[i]);
+                    TryGetCameraData(pipeline.asset, cameras, i, out m_CameraDatas[i]);
+                    ActiveRenders.Add(m_CameraDatas[i].renderer);
                 }
             }
-            void TryGetCameraData(CustomizedRenderPipelineAsset asset, Camera camera, out CameraData data)
+            void TryGetCameraData(CustomizedRenderPipelineAsset asset, Camera[] cameras, int idx, out CameraData data)
             {
-                camera.TryGetComponent<CameraSettings>(out data.settings);
+                var camera = cameras[idx];
+                camera.TryGetComponent<CameraSettings>(out var settings);
                 data.camera = camera;
-                data.renderer = asset.GetRenderer(data.settings == null ? -1 : data.settings.RendererIndex);
+                data.cameras = cameras;
+                data.settings = settings;
                 data.isBaseCamera = (camera.clearFlags <= CameraClearFlags.Color);
                 data.isOverlayCamera = !data.isBaseCamera; //suppose that skybox,color as base camera, depth or nothing as overlay camera
                 data.isRenderingUI = (camera.cullingMask & KeywordIds.UILayer) != 0;
-                ActiveRenders.Add(data.renderer);
+                data.renderer = asset.GetRenderer(settings == null ? -1 : settings.RendererIndex);
             }
         }
     }

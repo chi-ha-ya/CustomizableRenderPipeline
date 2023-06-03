@@ -30,7 +30,7 @@ namespace CustomizablePipeline
         /// <summary>
         /// 当前帧渲染的所有相机
         /// </summary>
-        // public Camera[] cameras;
+        public Camera[] cameras;
         /// <summary>
         /// setting attached on current camera
         /// </summary>

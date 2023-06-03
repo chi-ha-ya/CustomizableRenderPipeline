@@ -10,13 +10,13 @@ namespace CustomizablePipeline
     {
         public bool Initialized { get; private set; }
         public List<CustomizedProcess> Processes = new List<CustomizedProcess>();
-        private void OnEnable()
+        internal void Init()
         {
-            OnCreate();
-        }
-        internal void OnCreate()
-        {
-            foreach (var process in Processes) process.OnCreate(this);
+            if (!Initialized)
+            {
+                foreach (var process in Processes) process.Init(this);
+                Initialized = true;
+            }
         }
         internal void OnBeginFrameRendering()
         {
@@ -36,7 +36,7 @@ namespace CustomizablePipeline
 
             CommandBufferPool.Release(cmd);
         }
-        internal void RenderingSingleCamera()
+        internal void Execute()
         {
             foreach (var process in Processes)
             {
@@ -69,7 +69,11 @@ namespace CustomizablePipeline
 
             CommandBufferPool.Release(cmd);
         }
-        internal void Dispose(bool disposing) { }
+        internal void Dispose(bool disposing)
+        {
+            foreach (var process in Processes) process.Dispose(true);
+            Initialized = false;
+        }
         void OnDisable()
         {
             Dispose(true);
