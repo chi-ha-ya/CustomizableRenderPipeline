@@ -19,7 +19,8 @@ namespace CustomizablePipeline
             BeginFrameRendering(context, cameras);
             if (cameras != null || cameras.Length > 0)
             {
-                using (new ProfilingScope(null, KeywordStrings.CustomizedRP))
+                var cmd = CommandBufferPool.Get();
+                using (new ProfilingScope(cmd, KeywordStrings.CustomizedRP))
                 {
                     m_RenderData.Init(context, cameras, this);
                     foreach (var renderer in m_RenderData.ActiveRenders) renderer.Init();
@@ -29,7 +30,10 @@ namespace CustomizablePipeline
                     for (int i = 0; i < m_RenderData.Length; ++i) RenderingSingleCamera(m_RenderData[i]);
 
                     foreach (var renderer in m_RenderData.ActiveRenders) renderer.OnEndFrameRendering();
+                    RenderStatus.target.ReleaseAllActiveTemporaryRT(cmd);
                 }
+                CommandBufferPool.Release(cmd);
+
                 context.Submit();
             }
             EndFrameRendering(context, cameras);

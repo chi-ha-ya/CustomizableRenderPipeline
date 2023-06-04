@@ -16,12 +16,14 @@ namespace CustomizablePipeline
         public static CommandBuffer Get()
         {
             var cmd = s_BufferPool.Get();
-            cmd.name = "Unnamed Command Buffer";
+            // Set to empty on purpose, does not create profiling markers.
+            cmd.name = string.Empty;
             return cmd;
         }
 
         /// <summary>
         /// Get a new Command Buffer and assign a name to it.
+        /// Named Command Buffers will add profiling makers implicitly for the buffer execution.
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>

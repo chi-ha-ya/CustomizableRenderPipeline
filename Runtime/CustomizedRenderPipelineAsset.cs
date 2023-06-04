@@ -17,6 +17,7 @@ namespace CustomizablePipeline
         public CustomizedRender DefaultRenderer => Renderers[DefaultRendererIndex];
         public LightRenderingMode AdditionalLightsRenderingMode = LightRenderingMode.PerPixel;
         public int AdditionalLightsPerObjectLimit = 4;
+        public static CustomizedRenderPipelineAsset Current => GraphicsSettings.renderPipelineAsset as CustomizedRenderPipelineAsset;
 
         protected override RenderPipeline CreatePipeline()
         {

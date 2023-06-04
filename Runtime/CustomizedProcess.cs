@@ -8,6 +8,12 @@ namespace CustomizablePipeline
 {
     public abstract class CustomizedProcess : ScriptableObject
     {
+        protected RenderTarget target => RenderStatus.target;
+        protected ScriptableRenderContext context => RenderStatus.context;
+        protected CustomizedRenderPipeline pipeline => RenderStatus.pipeline;
+        protected CameraData cameraData => RenderStatus.cameraData;
+        protected CullingResults cullingResults => RenderStatus.cullingResults;
+
         public bool Enable = true;
         public string Name;
         [field: SerializeField] public long Identifier { get; internal set; }
@@ -45,9 +51,16 @@ namespace CustomizablePipeline
         void OnDisable() { Dispose(true); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected void SetRenderTarget(CommandBuffer cmd)
+        protected void SetRenderTarget(CommandBuffer cmd, RenderTargetHandle targetHandle)
         {
 
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected void Commit(CommandBuffer command, bool clear = true)
+        {
+            RenderStatus.context.ExecuteCommandBuffer(command);
+            if (clear) command.Clear();
         }
     }
 }

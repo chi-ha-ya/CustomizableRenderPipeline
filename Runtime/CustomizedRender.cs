@@ -20,7 +20,7 @@ namespace CustomizablePipeline
         }
         internal void OnBeginFrameRendering()
         {
-            var cmd = CommandBufferPool.Get(string.Empty);
+            var cmd = CommandBufferPool.Get();
 
             foreach (var process in Processes) if (process.Enable) process.OnFrameBegin(cmd);
             RenderStatus.Commit(cmd);
@@ -29,7 +29,7 @@ namespace CustomizablePipeline
         }
         internal void OnBeginCameraRendering()
         {
-            var cmd = CommandBufferPool.Get(string.Empty);
+            var cmd = CommandBufferPool.Get();
 
             foreach (var process in Processes) if (process.Enable) process.OnCameraSetup(cmd);
             RenderStatus.Commit(cmd);
@@ -42,7 +42,7 @@ namespace CustomizablePipeline
             {
                 if (process.Enable)
                 {
-                    var cmd = CommandBufferPool.Get(string.Empty);
+                    var cmd = CommandBufferPool.Get();
                     using (new ProfilingScope(cmd, process.Name))
                     {
                         process.Execute(cmd);
@@ -53,7 +53,7 @@ namespace CustomizablePipeline
         }
         internal void OnEndCameraRendering()
         {
-            var cmd = CommandBufferPool.Get(string.Empty);
+            var cmd = CommandBufferPool.Get();
 
             foreach (var process in Processes) if (process.Enable) process.OnCameraCleanup(cmd);
             RenderStatus.Commit(cmd);
@@ -62,7 +62,7 @@ namespace CustomizablePipeline
         }
         internal void OnEndFrameRendering()
         {
-            var cmd = CommandBufferPool.Get(string.Empty);
+            var cmd = CommandBufferPool.Get();
 
             foreach (var process in Processes) if (process.Enable) process.OnFrameCleanup(cmd);
             RenderStatus.Commit(cmd);

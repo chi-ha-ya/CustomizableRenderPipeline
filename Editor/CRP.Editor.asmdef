@@ -1,3 +1,16 @@
 {
-	"name": "CustomizableRenderPipeline.Editor"
+    "name": "CustomizableRenderPipeline.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:60776f8b64917ad4b983c94f3b611fc1"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }
